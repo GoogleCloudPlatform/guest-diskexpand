@@ -40,12 +40,18 @@ mv src/expandroot-lib.sh src/usr/share/dracut/modules.d/50expand_root/
   ./dracut6_7.sh
 %endif
 rsync -Pravz src/ %{buildroot}
+mkdir -p %{buildroot}/lib/systemd/system
+cp google-disk-expand.service %{buildroot}/lib/systemd/system/
+cp google-disk-expand.init %{buildroot}/etc/init.d/google-disk-expand
 
 %files
+%attr(755,root,root) /usr/bin/google_disk_expand
 %if 0%{?rhel} >= 7
  %attr(755,root,root) /usr/lib/dracut/modules.d/50expand_root/*
+ %attr(644,root,root) /lib/systemd/system/google-disk-expand.service
 %else
  %attr(755,root,root) /usr/share/dracut/modules.d/50expand_root/*
+ %attr(755,root,root) /etc/init.d/google-disk-expand
 %endif
 
 %post

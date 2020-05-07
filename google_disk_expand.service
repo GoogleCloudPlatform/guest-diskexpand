@@ -1,0 +1,12 @@
+[Unit]
+Description=Resize root filesystem if needed
+Before=basic.target
+After=local-fs.target sysinit.target
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/google_resize_rootfs
+
+[Install]
+WantedBy=basic.target
