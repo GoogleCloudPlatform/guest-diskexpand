@@ -35,7 +35,7 @@ This package resizes the root partition on first boot using parted.
 %autosetup
 
 %install
-mv src/expandfs-lib.sh src/usr/share/dracut/modules.d/50expand_rootfs/
+mv src/expandroot-lib.sh src/usr/share/dracut/modules.d/50expand_root/
 %if 0%{?rhel} >= 7
   ./dracut6_7.sh
 %endif
@@ -43,9 +43,9 @@ rsync -Pravz src/ %{buildroot}
 
 %files
 %if 0%{?rhel} >= 7
- %attr(755,root,root) /usr/lib/dracut/modules.d/50expand_rootfs/*
+ %attr(755,root,root) /usr/lib/dracut/modules.d/50expand_root/*
 %else
- %attr(755,root,root) /usr/share/dracut/modules.d/50expand_rootfs/*
+ %attr(755,root,root) /usr/share/dracut/modules.d/50expand_root/*
 %endif
 
 %post

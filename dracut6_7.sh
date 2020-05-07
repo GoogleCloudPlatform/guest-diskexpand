@@ -16,7 +16,7 @@
 # Modifies rhel6 dracut for rhel7.
 
 mv src/usr/share src/usr/lib
-pushd src/usr/lib/dracut/modules.d/50expand_rootfs
+pushd src/usr/lib/dracut/modules.d/50expand_root
 
 cat >module-setup.sh <<EOF
 #!/bin/bash

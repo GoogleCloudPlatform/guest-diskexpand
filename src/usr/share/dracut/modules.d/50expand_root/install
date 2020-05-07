@@ -13,28 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-PREREQS=""
-prereqs()
-{
-  echo "$PREREQS"
-}
+# Dracut install script for RHEL/CentOS
 
-case $1 in
-  prereqs)
-    prereqs
-    exit 0
-    ;;
-esac
+inst "$moddir/expandroot-lib.sh" "/lib/expandroot-lib.sh"
+inst_hook cmdline 50 "$moddir/expand_root_dummy.sh"
+inst_hook pre-mount 50 "$moddir/expand_root.sh"
 
-. /usr/share/initramfs-tools/hook-functions
-
-copy_exec /sbin/parted /bin
-copy_exec /bin/grep /bin
-copy_exec /bin/sed /bin
-copy_exec /usr/bin/cut /bin
-copy_exec /sbin/e2fsck /bin
-copy_exec /sbin/blkid /bin
-copy_exec /sbin/resize2fs /bin
-copy_exec /bin/udevadm /bin
-copy_exec /usr/sbin/dmidecode /bin
-copy_exec /sbin/sgdisk /bin
+dracut_install parted
+dracut_install sgdisk
+dracut_install cut
+dracut_install sed
+dracut_install grep
+dracut_install udevadm
