@@ -13,26 +13,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-root=$(grep -w / /proc/mounts|grep -v rootfs|cut -d' ' -f1)
-if [[ -z "$root" ]] || [[ ! -b "$root" ]]; then
+if ! root=$(findmnt --mountpoint / -n -o SOURCE) || [[ -z "$root" ]] ||
+  [[ ! -b "$root" ]]; then
   echo "Couldn't determine root device"
   exit 1
 fi
 
 echo "Checking if filesystem on ${root} needs resizing"
 
-if ! out=$(blkid -o udev "$root"); then
-  echo "Detecting fstype by blkid failed: ${out}"
-  exit 1
-fi
-  
-eval "$out"
-if [[ -z "$ID_FS_TYPE" ]]; then
-  echo "Unknown filesystem type"
+if ! fstype=$(findmnt --mountpoint / -n -o FSTYPE) || [[ -z "$fstype" ]]; then
+  echo "Detecting fstype failed: ${fstype}"
   exit 1
 fi
 
-case "$ID_FS_TYPE" in
+case "$fstype" in
   ext*)
     if ! out=$(resize2fs "$root"); then
       echo "Calling resize2fs \"${root}\" failed: ${out}"
@@ -45,7 +39,10 @@ case "$ID_FS_TYPE" in
       exit 1
     fi
     ;;
+  *)
+    echo "Unsupported filesystem type ${fstype}"
+    exit 0
+    ;;
 esac
 
 echo "Done."
-exit 0

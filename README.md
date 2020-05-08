@@ -9,6 +9,6 @@ images. It consists of two parts:
 
 This package has been tested on the following distros and versions.
 
-* RHEL/CentOS 7.4+
-* RHEL 8+
+* RHEL/CentOS 7.6+
+* RHEL/CentOS 8+
 * Debian 10+
