@@ -1,4 +1,4 @@
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2020 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,15 +18,10 @@ Version: %{_version}
 Release: g1
 License: Apache Software License
 Group: System Environment/Base
-URL: https://github.com/GoogleCloudPlatform/compute-image-packages
+URL: https://github.com/GoogleCloudPlatform/guest-diskexpand
 Source0: %{name}_%{version}.orig.tar.gz
 Requires: e2fsprogs, dracut, grep, util-linux, parted, gdisk
 Conflicts: dracut-modules-growroot
-
-BuildRequires: rsync
-
-# Allow other files in the source that don't end up in the package.
-%define _unpackaged_files_terminate_build 0
 
 %description
 This package resizes the root partition on first boot using parted.
@@ -35,27 +30,28 @@ This package resizes the root partition on first boot using parted.
 %autosetup
 
 %install
-mv src/expandroot-lib.sh src/usr/share/dracut/modules.d/50expand_root/
-%if 0%{?rhel} >= 7
-  ./dracut6_7.sh
-%endif
-rsync -Pravz src/ %{buildroot}
-mkdir -p %{buildroot}/lib/systemd/system
-cp google-disk-expand.service %{buildroot}/lib/systemd/system/
-cp google-disk-expand.init %{buildroot}/etc/init.d/google-disk-expand
+mkdir -p %{buildroot}/usr/lib/dracut/modules.d/50expand_root
+cp -R src/usr/lib/dracut/modules.d/50expand_root %{buildroot}/usr/lib/dracut/modules.d/
+cp src/expandroot-lib.sh %{buildroot}/usr/lib/dracut/modules.d/50expand_root/
+mkdir -p %{buildroot}/usr/lib/systemd/system
+cp google-disk-expand.service %{buildroot}/usr/lib/systemd/system/
+mkdir -p %{buildroot}/usr/bin
+cp src/usr/bin/google_disk_expand %{buildroot}/usr/bin/
 
 %files
 %attr(755,root,root) /usr/bin/google_disk_expand
-%if 0%{?rhel} >= 7
- %attr(755,root,root) /usr/lib/dracut/modules.d/50expand_root/*
- %attr(644,root,root) /lib/systemd/system/google-disk-expand.service
-%else
- %attr(755,root,root) /usr/share/dracut/modules.d/50expand_root/*
- %attr(755,root,root) /etc/init.d/google-disk-expand
-%endif
+%attr(755,root,root) /usr/lib/dracut/modules.d/50expand_root/*
+%attr(644,root,root) /usr/lib/systemd/system/google-disk-expand.service
 
 %post
+# On initial install, not upgrade.
+if [ $1 -eq 1 ]; then
+  systemctl enable google-disk-expand.service >/dev/null 2>&1 || :
+fi
 dracut --force
 
 %postun
-dracut --force
+# On uninstall, not upgrade.
+if [ $1 -eq 0 ]; then
+  dracut --force
+fi

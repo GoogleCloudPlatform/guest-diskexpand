@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-root=$(grep -w / /proc/mounts|cut -d' ' -f1)
+root=$(grep -w / /proc/mounts|grep -v rootfs|cut -d' ' -f1)
 if [[ -z "$root" ]] || [[ ! -b "$root" ]]; then
   echo "Couldn't determine root device"
   exit 1
