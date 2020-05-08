@@ -1,4 +1,12 @@
 #!/usr/bin/make -f
 
 %:
-	dh $@
+	dh $@ --with=systemd
+
+override_dh_systemd_enable:
+	install -d debian/gce-disk-expand/lib/systemd/system
+	install -p -m 0644 *.service debian/gce-disk-expand/lib/systemd/system/
+	dh_systemd_enable google-disk-expand.service
+
+override_dh_systemd_start:
+	# oneshot service should only run at boot

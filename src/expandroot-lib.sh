@@ -17,59 +17,10 @@ kmsg() {
   echo "gce-disk-expand: $@" > /dev/kmsg
 }
 
-resize_filesystem() {
-  local disk="$1" fs_type=""
-
-  if ! fs_type=$(blkid_get_fstype "$disk"); then
-    echo "$fs_type"
-    return 1
-  fi
-
-  case "${fs_type}" in
-    xfs)
-      kmsg "XFS filesystems must be mounted to be resized, deferring."
-      echo "true" > /tmp/xfs_resize
-      return 1
-      ;;
-    ext*)
-      if ! out=$(e2fsck -pf "$disk"); then
-        local ret=$?
-        kmsg "Calling e2fsck \"${disk}\" failed: ${out} exit code ${ret}"
-      fi
-      if ! out=$(resize2fs "$disk"); then
-        kmsg "Calling resize2fs \"${disk}\" failed: ${out}"
-        return 1
-      fi
-      ;;
-    *)
-      kmsg "Unsupported filesystem type ${fs_type}, unable to expand size."
-      return 1
-      ;;
-  esac
-}
-
-blkid_get_fstype() (
-    local root="$1"
-
-    kmsg "Getting fstype for $root with blkid."
-    if ! out=$(blkid -o udev "$root"); then
-        kmsg "Detecting fstype by blkid failed: ${out}"
-        return 1
-    fi
-
-    eval "$out"
-    if [ -z "$ID_FS_TYPE" ]; then
-        kmsg "No ID_FS_TYPE from blkid."
-        return 1
-    fi
-    echo $ID_FS_TYPE
-)
-
 sgdisk_get_label() {
     local root="$1"
     [ -z "$root" ] && return 0
 
-    kmsg "Getting $root label with sgdisk."
     if sgdisk -p "$root" | grep -q "Found invalid GPT and valid MBR"; then
         echo "mbr"
     else
@@ -111,11 +62,9 @@ split_partition() {
 parted_needresize() {
   local disk="$1" partnum="$2" disksize="" partend=""
   if [ -z "$disk" ] || [ -z "$partnum" ]; then
-    kmsg "invalid args to parted_needresize"
     return 1
   fi
 
-  kmsg "Check if $disk partition $partnum needs resize with parted."
   if ! out=$(parted -sm "$disk" unit b print 2>&1); then
     kmsg "Failed to get disk details: ${out}"
     return 1

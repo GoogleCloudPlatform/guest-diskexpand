@@ -71,15 +71,10 @@ main() {
       kmsg "Failed to resize partition: ${out}"
       exit
     fi
-
-    if ! out=$(resize_filesystem "$rootdev"); then
-      kmsg "Failed to resize filesystem: ${out}"
-      exit
-    fi
   ) 9<$rootdev
 }
 
-. /lib/expandfs-lib.sh
+. /lib/expandroot-lib.sh
 udevadm settle
 main
 udevadm settle

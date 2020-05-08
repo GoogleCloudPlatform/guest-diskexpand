@@ -1,5 +1,6 @@
-#!/bin/sh
-# Copyright 2018 Google Inc. All Rights Reserved.
+#!/bin/bash
+
+# Copyright 2020 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,4 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-command -v parted >/dev/null 2>&1
+check() {
+  command -v parted >/dev/null 2>&1
+}
+
+install() {
+  inst "$moddir/expandroot-lib.sh" "/lib/expandroot-lib.sh"
+  inst_hook cmdline 50 "$moddir/expand_root_dummy.sh"
+  inst_hook pre-mount 50 "$moddir/expand_root.sh"
+
+  dracut_install parted
+  dracut_install sgdisk
+  dracut_install cut
+  dracut_install sed
+  dracut_install grep
+  dracut_install udevadm
+}

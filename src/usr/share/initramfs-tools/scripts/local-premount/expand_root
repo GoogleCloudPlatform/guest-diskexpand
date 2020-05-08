@@ -26,18 +26,16 @@ case $1 in
 esac
 
 . /scripts/functions
-. /scripts/expandfs-lib.sh
+. /scripts/expandroot-lib.sh
+
+kmsg "Resizing partition on ${rootdev}"
 
 if ! rootdev=$(resolve_device "${ROOT}"); then
-  log_failure_msg "Failed to resolve root device for \"${ROOT}\""
-fi
-
-if ! fs_type=$(get_fstype "${rootdev}"); then
-  log_failure_msg "Failed to determine fstype for \"${rootdev}\""
+  kmsg "Failed to resolve root device for \"${ROOT}\""
 fi
 
 if ! out=$(split_partition "$rootdev"); then
-  log_failure_msg "Failed to detect disk and partition info: ${out}"
+  kmsg "Failed to detect disk and partition info: ${out}"
   exit 0
 fi
 
@@ -45,23 +43,18 @@ disk=${out%:*}
 partnum=${out#*:}
 
 if ! parted_needresize "${disk}" "${partnum}"; then
-  log_success_msg "Disk ${rootdev} doesn't need resizing."
+  kmsg "Disk ${rootdev} doesn't need resizing."
   exit 0
 fi
 
 if ! out=$(sgdisk_fix_gpt "$disk"); then
-  log_failure_msg "Failed to fix GPT: ${out}"
+  kmsg "Failed to fix GPT: ${out}"
   exit 0
 fi
 
-echo "Resizing partition on ${rootdev}"
 if ! out=$(parted_resizepart "${disk}" "${partnum}"); then
-  log_failure_msg "Failed to resize partition: ${out}"
+  kmsg "Failed to resize partition: ${out}"
   exit 0
 fi
 
-echo "Resizing filesystem on ${rootdev}"
-if ! out=$(resize_filesystem "${rootdev}"); then
-  log_failure_msg "Failed to resize filesystem: ${out}"
-  exit 0
-fi
+kmsg "Done"
