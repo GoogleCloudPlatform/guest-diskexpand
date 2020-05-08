@@ -6,7 +6,7 @@ DefaultDependencies=no
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/google_resize_rootfs
+ExecStart=/usr/bin/google_disk_expand
 
 [Install]
 WantedBy=basic.target

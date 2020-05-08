@@ -45,9 +45,7 @@ cp src/usr/bin/google_disk_expand %{buildroot}/usr/bin/
 
 %post
 # On initial install, not upgrade.
-if [ $1 -eq 1 ]; then
-  systemctl enable google-disk-expand.service >/dev/null 2>&1 || :
-fi
+systemctl enable google-disk-expand.service >/dev/null 2>&1 || :
 dracut --force
 
 %postun

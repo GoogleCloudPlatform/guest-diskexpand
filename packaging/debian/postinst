@@ -1,5 +1,6 @@
 #!/bin/sh
-# Copyright 2018 Google Inc. All Rights Reserved.
+
+# Copyright 2020 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,12 +16,8 @@
 
 #DEBHELPER#
 
-set -e
-
-case "$1" in
-  configure)
-    if which /usr/sbin/update-initramfs > /dev/null; then
+if [ "$1" = "configure" ]; then
+    if which update-initramfs > /dev/null; then
       update-initramfs -u
     fi
-    ;;
-esac
+fi
