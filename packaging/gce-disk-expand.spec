@@ -15,7 +15,7 @@ Name: gce-disk-expand
 Summary: Google Compute Engine root disk expansion module
 Epoch: 1
 Version: %{_version}
-Release: g1
+Release: g1%{?dist}
 License: Apache Software License
 Group: System Environment/Base
 URL: https://github.com/GoogleCloudPlatform/guest-diskexpand
