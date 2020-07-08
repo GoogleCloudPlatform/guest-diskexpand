@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if ! root=$(findmnt --mountpoint / -n -o SOURCE) || [[ -z "$root" ]] ||
+if ! root=$(findmnt -n -o SOURCE /) || [[ -z "$root" ]] ||
   [[ ! -b "$root" ]]; then
   echo "Couldn't determine root device"
   exit 1
@@ -21,7 +21,7 @@ fi
 
 echo "Checking if filesystem on ${root} needs resizing"
 
-if ! fstype=$(findmnt --mountpoint / -n -o FSTYPE) || [[ -z "$fstype" ]]; then
+if ! fstype=$(findmnt -n -o FSTYPE /) || [[ -z "$fstype" ]]; then
   echo "Detecting fstype failed: ${fstype}"
   exit 1
 fi
