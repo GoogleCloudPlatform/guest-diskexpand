@@ -1,3 +1,0 @@
-src/usr/bin/google_disk_expand usr/bin/
-src/usr/share/initramfs-tools usr/share/
-src/expandroot-lib.sh usr/share/initramfs-tools/scripts/
