@@ -23,6 +23,8 @@ Source0: %{name}_%{version}.orig.tar.gz
 Requires: e2fsprogs, dracut, grep, util-linux, parted, gdisk
 Conflicts: dracut-modules-growroot
 
+BuildArch: noarch
+
 %description
 This package resizes the root partition on first boot using parted.
 
