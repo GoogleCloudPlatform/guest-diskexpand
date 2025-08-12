@@ -62,19 +62,39 @@ main() {
 
     kmsg "Resizing disk ${rootdev}"
 
-    # First, move the secondary GPT to the end.
+    # First, move the secondary GPT to the end and resize the partition.
+    # On EL<=9 this uses sgdisk; on EL10 it falls back to sfdisk.
     if ! out=$(sgdisk_fix_gpt "$disk"); then
       kmsg "Failed to fix GPT: ${out}"
     fi
-
-    if ! out=$(parted_resizepart "$disk" "$partnum"); then
-      kmsg "Failed to resize partition: ${out}"
+    # After relocating the backup GPT header, force a kernel rescan. Close the
+    # lock FD briefly so the kernel can reread the table, then reacquire it.
+    exec 9>&-
+    reload_partition_table "$disk"
+    exec 9<"$rootdev"
+    if ! flock -n 9; then
+      kmsg "couldn't re-acquire lock on ${rootdev} after GPT fix"
       exit
     fi
+    if ! out=$(parted_resizepart "$disk" "$partnum"); then
+      kmsg "Failed to resize partition with parted: ${out}"
+      # Try growpart as a fallback if available (works well on EL10)
+      if command -v growpart >/dev/null 2>&1; then
+        if ! out=$(growpart "$disk" "$partnum" 2>&1); then
+          kmsg "Fallback growpart also failed: ${out}"
+          exit
+        fi
+      else
+        exit
+      fi
+    fi
+
+    # Ensure the kernel observes the new partition end
+    reload_partition_table "$disk"
   ) 9<$rootdev
 }
 
 . /lib/expandroot-lib.sh
-udevadm settle
+udevadm settle -t 3
 main
-udevadm settle
+udevadm settle -t 3

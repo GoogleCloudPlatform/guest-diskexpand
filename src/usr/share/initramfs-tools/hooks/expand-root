@@ -14,16 +14,15 @@
 # limitations under the License.
 
 PREREQS=""
-prereqs()
-{
+prereqs() {
   echo "$PREREQS"
 }
 
 case $1 in
-  prereqs)
-    prereqs
-    exit 0
-    ;;
+prereqs)
+  prereqs
+  exit 0
+  ;;
 esac
 
 . /usr/share/initramfs-tools/hook-functions
@@ -35,4 +34,7 @@ copy_exec /usr/bin/cut /bin
 copy_exec /sbin/blkid /bin
 copy_exec /bin/udevadm /bin
 copy_exec /usr/sbin/dmidecode /bin
-copy_exec /sbin/sgdisk /bin
+# Optional tools; ignore if missing
+copy_exec /sbin/sgdisk /bin || true
+copy_exec /sbin/sfdisk /bin || true
+copy_exec /sbin/partprobe /bin || true

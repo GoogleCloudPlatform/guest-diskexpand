@@ -14,29 +14,64 @@
 # limitations under the License.
 
 kmsg() {
-  echo "gce-disk-expand: $@" > /dev/kmsg
+  echo "gce-disk-expand: $@" >/dev/kmsg
 }
 
 sgdisk_get_label() {
-    local root="$1"
-    [ -z "$root" ] && return 0
+  local root="$1"
+  [ -z "$root" ] && return 0
 
+  if command -v blkid >/dev/null 2>&1; then
+    # Prefer blkid which does not require sgdisk
+    local pttype
+    pttype=$(blkid -o value -s PTTYPE "$root" 2>/dev/null)
+    [ -n "$pttype" ] && echo "$pttype" && return
+  fi
+
+  if command -v sgdisk >/dev/null 2>&1; then
     if sgdisk -p "$root" | grep -q "Found invalid GPT and valid MBR"; then
-        echo "mbr"
+      echo "mbr"
     else
-        echo "gpt"
+      echo "gpt"
     fi
+    return
+  fi
+
+  # Fallback: assume GPT if parted reports gpt, else mbr
+  if parted -sm "$root" unit b print 2>/dev/null | grep -qi ":gpt:"; then
+    echo "gpt"
+  else
+    echo "mbr"
+  fi
 }
 
 sgdisk_fix_gpt() {
   local disk="$1"
   [ -z "$disk" ] && return
 
-  local label=$(sgdisk_get_label "$disk")
+  local label
+  label=$(sgdisk_get_label "$disk")
   [ "$label" != "gpt" ] && return
 
-  kmsg "Moving GPT header for $disk with sgdisk."
-  sgdisk --move-second-header "$disk"
+  if command -v sgdisk >/dev/null 2>&1; then
+    kmsg "Moving GPT header for $disk with sgdisk."
+    sgdisk --move-second-header "$disk"
+    return
+  fi
+
+  # EL10: gdisk/sgdisk may be absent. Rewrite the GPT with sfdisk to relocate
+  # the backup header to the end of the device without changing partitions.
+  if command -v sfdisk >/dev/null 2>&1; then
+    kmsg "Rewriting GPT for $disk with sfdisk to relocate backup header."
+    # Remove fixed geometry lines so sfdisk recomputes them for the current disk size.
+    # This effectively moves the backup header to the end of the device.
+    if ! sfdisk -d "$disk" 2>/dev/null | sed -E '/^(first-lba|last-lba):/d' | sfdisk --force "$disk" 1>/dev/null 2>&1; then
+      kmsg "sfdisk rewrite failed for $disk"
+    fi
+    return
+  fi
+
+  kmsg "No tool available to relocate GPT backup header on $disk"
 }
 
 # Returns "disk:partition", supporting multiple block types.
@@ -83,18 +118,41 @@ parted_needresize() {
   partend=${partend%%B}
 
   # Check if the distance is > .5GB
-  [ $((disksize-partend)) -gt 536870912 ]
+  [ $((disksize - partend)) -gt 536870912 ]
   return
 }
 
 # Resizes partition using 'resizepart' command.
 parted_resizepart() {
-  local disk="$1" partnum="$2"
+  local disk="$1" partnum="$2" partname=""
   [ -z "$disk" -o -z "$partnum" ] && return
 
+  # Correctly construct partition name for logging
+  case "$disk" in
+  *nvme*) partname="${disk}p${partnum}" ;;
+  *) partname="${disk}${partnum}" ;;
+  esac
+
   kmsg "Resizing $disk partition $partnum with parted."
-  if ! out=$(parted -sm "$disk" -- resizepart $partnum -1 2>&1); then
-    kmsg "Unable to resize ${disk}${partnum}: ${out}"
+  if ! out=$(parted -sm "$disk" -- resizepart "$partnum" -1 2>&1); then
+    kmsg "Unable to resize ${partname}: ${out}"
     return 1
   fi
+}
+
+# Proactively trigger a kernel partition table rescan and udev events.
+reload_partition_table() {
+  local disk="$1"
+  [ -z "$disk" ] && return 0
+
+  # Best-effort sequence; ignore individual failures.
+  # Wait for any pending events to complete before making changes.
+  udevadm settle -t 3 2>/dev/null || true
+  if command -v partprobe >/dev/null 2>&1; then
+    partprobe "$disk" 2>/dev/null || true
+  fi
+  # The partprobe command is asynchronous. This second call to udevadm settle
+  # acts as a synchronization barrier, ensuring that all udev events triggered
+  # by the partition table rescan have been fully processed before proceeding.
+  udevadm settle -t 3 2>/dev/null || true
 }
