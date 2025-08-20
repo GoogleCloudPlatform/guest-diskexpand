@@ -24,9 +24,15 @@ install() {
   inst_hook pre-mount 50 "$moddir/expand_root.sh"
 
   dracut_install parted
-  dracut_install sgdisk
+  # Try to include sgdisk when present (EL<=9). It's optional on EL10.
+  dracut_install sgdisk || :
+  # EL10-friendly tools and general helpers used for rescans
+  dracut_install sfdisk || :
+  dracut_install partprobe || :
+  dracut_install growpart || :
   dracut_install cut
   dracut_install sed
   dracut_install grep
   dracut_install udevadm
+  dracut_install flock || :
 }

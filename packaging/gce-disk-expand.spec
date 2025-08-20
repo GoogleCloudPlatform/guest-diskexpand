@@ -20,7 +20,15 @@ License: Apache Software License
 Group: System Environment/Base
 URL: https://github.com/GoogleCloudPlatform/guest-diskexpand
 Source0: %{name}_%{version}.orig.tar.gz
-Requires: e2fsprogs, dracut, grep, util-linux, parted, gdisk
+
+# Base dependencies for all distributions
+Requires: e2fsprogs, dracut, grep, util-linux, parted
+
+# On EL<=9, pull in gdisk/sgdisk; EL10+ drops it
+%if 0%{?rhel} && 0%{?rhel} < 10
+Requires: gdisk
+%endif
+
 Conflicts: dracut-modules-growroot
 
 BuildArch: noarch
