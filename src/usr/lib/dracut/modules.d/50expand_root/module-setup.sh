@@ -24,10 +24,21 @@ install() {
   inst_hook pre-mount 50 "$moddir/expand_root.sh"
 
   dracut_install parted
-  # Try to include sgdisk when present (EL<=9). It's optional on EL10.
-  dracut_install sgdisk || :
-  # EL10-friendly tools and general helpers used for rescans
-  dracut_install sfdisk || :
+
+  local installed_partition_tool=0
+
+  # Try to install sgdisk quietly (EL9 or lower)
+  dracut_install sgdisk >/dev/null 2>&1 && installed_partition_tool=1
+
+  # Try to install sfdisk quietly (EL10+)
+  dracut_install sfdisk >/dev/null 2>&1 && installed_partition_tool=1
+
+  # Check if both sfdisk and sgdisk failed
+  if [ "$installed_partition_tool" -eq 0 ]; then
+    echo "ERROR: Neither sgdisk nor sfdisk could be installed. At least one is required." >&2
+    return 1
+  fi
+
   dracut_install partprobe || :
   dracut_install growpart || :
   dracut_install cut
